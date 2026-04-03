@@ -9,8 +9,11 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const { search, department, page = 1, limit = 10 } = req.query;
-    const currentPage = Math.max(1, +page);
-    const limitePerPage = Math.max(1, +limit);
+    const currentPage = Math.max(1, parseInt(String(page), 10) || 1);
+    const limitePerPage = Math.min(
+      Math.max(1, parseInt(String(limit), 10) || 10),
+      100,
+    ); // max 100 items per page to prevent abuse
 
     const offset = (currentPage - 1) * limitePerPage;
 
@@ -29,8 +32,10 @@ router.get("/", async (req, res) => {
     // if department is provided, filter subjects by department name
     if (department) {
       filterConditions.push(ilike(departments.name, `%${department}%`));
+      const deptPattern = `%${String(department).replace(/%/g, "\\%").replace(/_/g, "\\_")}%`;
+      filterConditions.push(ilike(departments.name, deptPattern)); // escape % and _ for SQL LIKE
     }
-  
+
     const whereClause =
       filterConditions.length > 0 ? and(...filterConditions) : undefined;
 
@@ -41,7 +46,7 @@ router.get("/", async (req, res) => {
       .where(whereClause);
 
     const totalCount = countResult[0]?.count || 0;
- 
+
     const subjectList = await db
       .select({
         ...getTableColumns(subjects),
