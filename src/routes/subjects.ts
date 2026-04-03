@@ -1,6 +1,5 @@
-import { and, desc, eq, getTableColumns, ilike, or, sql } from "drizzle-orm";
 import express from "express";
-import { error } from "node:console";
+import { and, desc, eq, getTableColumns, ilike, or, sql } from "drizzle-orm";
 import { departments, subjects } from "../db/schema";
 import { db } from "../db";
 
@@ -31,18 +30,18 @@ router.get("/", async (req, res) => {
     if (department) {
       filterConditions.push(ilike(departments.name, `%${department}%`));
     }
-
+  
     const whereClause =
       filterConditions.length > 0 ? and(...filterConditions) : undefined;
 
     const countResult = await db
-      .select({ count: sql`<number>count(*)</number>` })
+      .select({ count: sql<number>`count(*)` })
       .from(subjects)
       .leftJoin(departments, eq(subjects.departmentId, departments.id))
       .where(whereClause);
 
-    const totalCount = Number(countResult[0]?.count || 0);
-
+    const totalCount = countResult[0]?.count || 0;
+ 
     const subjectList = await db
       .select({
         ...getTableColumns(subjects),
@@ -66,7 +65,7 @@ router.get("/", async (req, res) => {
     });
   } catch (e) {
     console.error(`Get /subjects error: ${e}`);
-    res.status(500).json({ error: "Internal Server Error" });
+    res.status(500).json({ error: "faild to get subjects" });
   }
 });
 
